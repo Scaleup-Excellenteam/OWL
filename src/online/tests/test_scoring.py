@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.online.models.correction import Correction, CorrectionType
+from src.models import Correction, CorrectionType
 from src.online.scoring import calculate_score
 
 

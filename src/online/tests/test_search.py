@@ -1,7 +1,7 @@
 """Tests for fuzzy DFS trie search."""
 
-from src.models import TrieNode
-from src.online.models.correction import Correction, CorrectionType, SearchMatch
+from src.models import Correction, CorrectionType, TrieNode
+from src.online.models.correction import SearchMatch
 from src.online.search import search
 
 

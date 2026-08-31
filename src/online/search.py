@@ -1,7 +1,7 @@
 """Fuzzy DFS traversal at the boundary between trie search and scoring."""
 
-from src.models import TrieNode
-from src.online.models.correction import Correction, CorrectionType, SearchMatch
+from src.models import Correction, CorrectionType, TrieNode
+from src.online.models.correction import SearchMatch
 
 
 def _dfs(
