@@ -47,3 +47,5 @@ class SearchCursor:
     node: TrieNode
     budget: int
     correction: Correction | None
+    consumed_length: int
+    ends_with_space: bool

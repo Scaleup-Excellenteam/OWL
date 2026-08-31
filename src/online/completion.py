@@ -1,8 +1,10 @@
 """Coordinate normalization, fuzzy search, scoring, and result assembly."""
 
+from collections.abc import Sequence
 from pathlib import Path
+import string
 
-from src.models import AutoCompleteData, SentenceMetadata, TrieNode
+from src.models import AutoCompleteData, SearchCursor, SentenceMetadata, TrieNode
 from src.online.scoring import calculate_score
 from src.online.search import search
 from src.utils import get_original_sentence, normalize_text
@@ -28,39 +30,108 @@ def configure_completion(
 
 def _best_scores_by_sentence(
     trie_root: TrieNode,
-    normalized_prefix: str,
-) -> dict[tuple[int, int], tuple[SentenceMetadata, int]]:
+    normalized_chunk: str,
+    cursors: Sequence[SearchCursor] | None,
+    ends_with_space: bool,
+) -> tuple[
+    dict[tuple[int, int], tuple[SentenceMetadata, int]],
+    list[SearchCursor],
+]:
     """Retain the highest-scoring search path for each sentence occurrence.
 
     Args:
         trie_root: Root of the suffix trie to search.
-        normalized_prefix: Normalized, non-empty user input.
+        normalized_chunk: Normalized input chunk to consume.
+        cursors: Previous search stopping points, or ``None`` for a new search.
+        ends_with_space: Whether the complete raw input ends in a separator.
 
     Returns:
-        Sentence metadata and its best score, keyed by file and line indexes.
+        Best sentence scores keyed by source position, and new search cursors.
     """
     best_results: dict[tuple[int, int], tuple[SentenceMetadata, int]] = {}
 
-    for match in search(trie_root, normalized_prefix):
-        score = calculate_score(len(normalized_prefix), match.correction)
+    matches, next_cursors = search(
+        trie_root,
+        normalized_chunk,
+        cursors,
+        ends_with_space,
+    )
+    for match, cursor in zip(matches, next_cursors, strict=True):
+        score = calculate_score(cursor.consumed_length, match.correction)
         for sentence_ref in match.sentence_refs:
             key = (sentence_ref.file_id, sentence_ref.line_number)
             previous = best_results.get(key)
             if previous is None or score > previous[1]:
                 best_results[key] = (sentence_ref, score)
 
-    return best_results
+    return best_results, next_cursors
 
 
-def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
-    """Return the five best sentence completions for a user prefix.
+def _is_normalized_separator(character: str) -> bool:
+    """Return whether normalization maps a character to a word separator.
 
     Args:
-        prefix: Raw text typed by the user.
+        character: A single raw input character.
 
     Returns:
-        Up to five completions ordered by descending score and then
-        alphabetically by their original sentence text.
+        ``True`` for whitespace and standard punctuation.
+    """
+    return character.isspace() or character in string.punctuation
+
+
+def _normalize_chunk(
+    chunk: str,
+    cursors: Sequence[SearchCursor] | None,
+) -> tuple[str, bool]:
+    """Normalize a raw chunk while preserving continuous-search boundaries.
+
+    Args:
+        chunk: Newly appended raw input.
+        cursors: Previous search stopping points, or ``None`` for an initial
+            input.
+
+    Returns:
+        A normalized chunk whose boundary spaces compose correctly with the
+        previous input, plus whether the raw input ends in a separator.
+
+    Raises:
+        ValueError: If cursors from incompatible input states are combined.
+    """
+    previous_ends_with_space = False
+    if cursors:
+        ending_states = {cursor.ends_with_space for cursor in cursors}
+        if len(ending_states) != 1:
+            raise ValueError("all cursors must represent the same normalized input")
+        previous_ends_with_space = ending_states.pop()
+
+    normalized = normalize_text(chunk)
+    if not chunk:
+        return normalized, previous_ends_with_space
+
+    begins_with_separator = _is_normalized_separator(chunk[0])
+    ends_with_separator = _is_normalized_separator(chunk[-1])
+
+    if normalized and cursors is not None:
+        if previous_ends_with_space or begins_with_separator:
+            normalized = f" {normalized}"
+
+    return normalized, ends_with_separator
+
+
+def get_best_k_completions(
+    chunk: str,
+    cursors: Sequence[SearchCursor] | None = None,
+) -> tuple[list[AutoCompleteData], list[SearchCursor]]:
+    """Return completions and resumable cursors after consuming a raw chunk.
+
+    Args:
+        chunk: Newly appended raw input. For a new search, this is the complete
+            initial input.
+        cursors: Search cursors returned for the previous input, or ``None`` to
+            begin a new search.
+
+    Returns:
+        Up to five ranked completions and the new search stopping cursors.
 
     Raises:
         RuntimeError: If completion data has not been configured.
@@ -70,15 +141,18 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
             "completion is not configured; call configure_completion() first"
         )
 
-    normalized_prefix = normalize_text(prefix)
-    if not normalized_prefix:
-        return []
+    normalized_chunk, ends_with_space = _normalize_chunk(chunk, cursors)
+    if not normalized_chunk and cursors is None:
+        return [], []
 
     completions = []
-    for metadata, score in _best_scores_by_sentence(
+    best_scores, next_cursors = _best_scores_by_sentence(
         _trie_root,
-        normalized_prefix,
-    ).values():
+        normalized_chunk,
+        cursors,
+        ends_with_space,
+    )
+    for metadata, score in best_scores.values():
         sentence = get_original_sentence(metadata, _file_registry)
         completions.append(
             AutoCompleteData(
@@ -97,4 +171,4 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
             completion.offset,
         )
     )
-    return completions[:5]
+    return completions[:5], next_cursors
