@@ -20,3 +20,7 @@ env/
 .pytest_cache/
 .vscode/
 .idea/
+
+# AI Agent Instructions
+agents.md
+gemini.md
