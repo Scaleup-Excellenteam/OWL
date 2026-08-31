@@ -37,11 +37,18 @@ def initialize_system(
     cache_path: Path = DEFAULT_CACHE_FILE
 ) -> tuple[TrieNode, list[Path]]:
     if cache_path.exists():
-        with open(cache_path, "rb") as f:
-            trie_root, loaded_registry = pickle.load(f)
-            file_registry.clear()
-            file_registry.extend(loaded_registry)
-            return trie_root, file_registry
+        try:
+            with open(cache_path, "rb") as f:
+                trie_root, loaded_registry = pickle.load(f)
+                file_registry.clear()
+                file_registry.extend(loaded_registry)
+                return trie_root, file_registry
+        except (EOFError, pickle.UnpicklingError, Exception):
+            print(f"Warning: Corrupt or incomplete cache at {cache_path}. Rebuilding from scratch...")
+            try:
+                cache_path.unlink()
+            except Exception:
+                pass
 
     # Registry does not exist, build it from scratch
     registry = build_file_registry(archive_path)
