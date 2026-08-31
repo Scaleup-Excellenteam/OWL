@@ -39,14 +39,19 @@ def insert_sentence(
     max_refs: int = MAX_REFS_PER_NODE,
 ) -> None:
     """
-    Normalize a sentence and insert every suffix up to `max_suffix_len`.
-    Inlined character traversal avoids substring slice allocations and function call overhead.
-    Caps sentence references per node to `max_refs` for sub-second serialization.
+    Normalize a sentence and insert suffixes starting at word boundaries.
+    Caps depth to `max_suffix_len` and references per node to `max_refs`.
     """
     normalized_sentence = normalize_text(sentence)
     n = len(normalized_sentence)
+    if not n:
+        return
 
     for start_index in range(n):
+        # Word-Boundary Optimization: only start suffix paths at the start of a word
+        if start_index != 0 and normalized_sentence[start_index - 1] != " ":
+            continue
+
         node = root
         limit = min(n, start_index + max_suffix_len)
         for i in range(start_index, limit):

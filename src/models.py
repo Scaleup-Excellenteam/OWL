@@ -27,3 +27,10 @@ class TrieNode:
         self.children: dict[str, "TrieNode"] = {}
         # Bounded list of top candidate references for maximum speed and minimal memory
         self.sentence_refs: list[SentenceMetadata] = []
+
+    def __reduce__(self):
+        # Fast C-level tuple serialization that bypasses Python reflection
+        return (TrieNode, (self.char,), (self.children, self.sentence_refs))
+
+    def __setstate__(self, state):
+        self.children, self.sentence_refs = state

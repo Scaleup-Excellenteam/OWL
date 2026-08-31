@@ -47,8 +47,11 @@ def load_master_state(cache_path: Path = MASTER_CACHE_FILE) -> tuple[TrieNode, l
         try:
             print(f"📦 Loading existing master cache from '{cache_path}'...")
             start_load = time.time()
+            import gc
+            gc.disable()
             with open(cache_path, "rb") as f:
                 root, reg = pickle.load(f)
+            gc.enable()
             elapsed = time.time() - start_load
             size_mb = os.path.getsize(cache_path) / (1024 * 1024)
             print(f"✅ Loaded master cache ({len(reg)} files, {size_mb:.1f} MB) in {elapsed:.2f}s.\n")
@@ -63,8 +66,11 @@ def save_master_state(root: TrieNode, registry: list[Path], cache_path: Path = M
     """Saves master Trie and registry to disk."""
     print(f"\n💾 Saving master cache to '{cache_path}' ({len(registry)} total files)...")
     start_save = time.time()
+    import gc
+    gc.disable()
     with open(cache_path, "wb") as f:
         pickle.dump((root, registry), f, protocol=pickle.HIGHEST_PROTOCOL)
+    gc.enable()
     elapsed = time.time() - start_save
     size_mb = os.path.getsize(cache_path) / (1024 * 1024)
     print(f"✅ Cache saved in {elapsed:.2f}s (Size: {size_mb:.1f} MB).\n")
