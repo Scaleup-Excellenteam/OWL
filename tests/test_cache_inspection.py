@@ -97,9 +97,9 @@ def quick_sample_trie_test():
             print(f"   Top 2 matching original sentences:")
             for i, meta in enumerate(refs[:2]):
                 raw_sentence = get_original_sentence(meta, registry)
-                file_name = registry[meta.file_id].name
+                file_name = registry[get_file_id(meta)].name
                 clean_preview = raw_sentence.strip()[:80].encode("ascii", "replace").decode("ascii")
-                print(f"     [{i+1}] ({file_name}:{meta.line_number}) -> {clean_preview}")
+                print(f"     [{i+1}] ({file_name}:{get_line_number(meta)}) -> {clean_preview}")
         else:
             print(f"   [NOT FOUND] No matches found for '{word}'.")
 

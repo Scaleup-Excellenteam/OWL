@@ -103,7 +103,7 @@ def build_incremental_batch(
                     records.append((file_id, line_number, raw_line))
 
     total_lines = len(records)
-    num_cores = max(1, cpu_count())
+    num_cores = max(1, min(4, cpu_count() // 2))
     print(f"🔨 Total lines in batch: {total_lines:,} | Distributing across all {num_cores} CPU cores...")
 
     # 2. Partition lines evenly across all available cores

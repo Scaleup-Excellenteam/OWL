@@ -18,14 +18,14 @@ def _find_node(root: TrieNode, text: str) -> TrieNode | None:
 
 
 def test_sentence_metadata_can_be_stored_in_a_set():
-    metadata = SentenceMetadata(file_id=2, line_number=7)
+    metadata = create_metadata(2, line_number=7)
 
-    assert {metadata} == {SentenceMetadata(file_id=2, line_number=7)}
+    assert {metadata} == {create_metadata(2, line_number=7)}
 
 
 def test_insert_suffix_creates_nodes_and_sentence_references():
     root = TrieNode()
-    metadata = SentenceMetadata(file_id=0, line_number=3)
+    metadata = create_metadata(0, line_number=3)
 
     insert_suffix(root, "demo", metadata)
 
@@ -38,8 +38,8 @@ def test_insert_suffix_creates_nodes_and_sentence_references():
 
 def test_insert_suffix_reuses_an_existing_path():
     root = TrieNode()
-    first = SentenceMetadata(file_id=0, line_number=0)
-    second = SentenceMetadata(file_id=1, line_number=4)
+    first = create_metadata(0, line_number=0)
+    second = create_metadata(1, line_number=4)
 
     insert_suffix(root, "same", first)
     original_s_node = root.children["s"]
@@ -51,7 +51,7 @@ def test_insert_suffix_reuses_an_existing_path():
 
 def test_insert_sentence_normalizes_and_inserts_every_suffix():
     root = TrieNode()
-    metadata = SentenceMetadata(file_id=0, line_number=1)
+    metadata = create_metadata(0, line_number=1)
 
     insert_sentence(root, "Hello,  World!", metadata)
 
@@ -70,7 +70,7 @@ def test_insert_sentence_normalizes_and_inserts_every_suffix():
 def test_insert_sentence_ignores_empty_normalized_text():
     root = TrieNode()
 
-    insert_sentence(root, "... !!!", SentenceMetadata(file_id=0, line_number=0))
+    insert_sentence(root, "... !!!", create_metadata(0, line_number=0))
 
     assert root.children == {}
 
@@ -90,9 +90,9 @@ def test_build_suffix_trie_uses_file_and_line_metadata():
     assert alpha_node is not None
     assert beta_node is not None
     assert shared_node is not None
-    assert alpha_node.sentence_refs == {SentenceMetadata(0, 0)}
-    assert beta_node.sentence_refs == {SentenceMetadata(1, 5)}
+    assert alpha_node.sentence_refs == {create_metadata(0, 0)}
+    assert beta_node.sentence_refs == {create_metadata(1, 5)}
     assert shared_node.sentence_refs == {
-        SentenceMetadata(0, 0),
-        SentenceMetadata(1, 5),
+        create_metadata(0, 0),
+        create_metadata(1, 5),
     }

@@ -52,7 +52,7 @@ def test_build_trie_on_5_real_texts_1000_lines():
 
     # 4. Verify suffix retrieval for a real sentence from file 0
     file_id, line_number, raw_line = records[0]
-    metadata = SentenceMetadata(file_id=file_id, line_number=line_number)
+    metadata = create_metadata(file_id, line_number=line_number)
 
     # Check original sentence retrieval
     original = get_original_sentence(metadata, sample_registry)

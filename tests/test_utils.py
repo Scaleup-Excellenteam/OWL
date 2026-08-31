@@ -29,9 +29,9 @@ def test_get_original_sentence(tmp_path: Path):
     
     registry = [sample_file]
     
-    meta_0 = SentenceMetadata(file_id=0, line_number=0)
-    meta_1 = SentenceMetadata(file_id=0, line_number=1)
-    meta_2 = SentenceMetadata(file_id=0, line_number=2)
+    meta_0 = create_metadata(0, line_number=0)
+    meta_1 = create_metadata(0, line_number=1)
+    meta_2 = create_metadata(0, line_number=2)
     
     assert get_original_sentence(meta_0, registry) == "First raw line with, punctuation!"
     assert get_original_sentence(meta_1, registry) == "Second line"
@@ -39,6 +39,6 @@ def test_get_original_sentence(tmp_path: Path):
 
 
 def test_get_original_sentence_invalid_registry():
-    meta = SentenceMetadata(file_id=5, line_number=0)
+    meta = create_metadata(5, line_number=0)
     with pytest.raises(IndexError):
         get_original_sentence(meta, [])

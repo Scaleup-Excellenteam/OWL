@@ -58,8 +58,8 @@ def initialize_system(
             pickle.dump((master_root, registry), f, protocol=pickle.HIGHEST_PROTOCOL)
         return master_root, file_registry
     
-    # Map-Reduce setup
-    num_cores = max(1, cpu_count())
+    # Map-Reduce setup: strictly limit concurrency to prevent memory explosion
+    num_cores = max(1, min(4, cpu_count() // 2))
     
     print(f"📖 Reading all lines from {len(registry)} files into memory...")
     records: list[tuple[int, int, str]] = []

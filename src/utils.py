@@ -1,7 +1,7 @@
 import itertools
 from pathlib import Path
 import string
-from src.models import SentenceMetadata
+from src.models import SentenceMetadata, get_file_id, get_line_number
 
 # Precomputed fast C-level translation table for stripping punctuation
 # Replaces all standard punctuation characters with a space
@@ -28,17 +28,20 @@ def normalize_text(text: str) -> str:
 
 
 def get_original_sentence(metadata: SentenceMetadata, registry: list[Path]) -> str:
-    """
-    Given the sentence metadata and file registry, opens the target file,
-    lazily seeks to the specific 0-based line without loading the entire file into memory,
-    and returns the raw un-normalized string (stripped of trailing newlines).
-    """
-    if metadata.file_id < 0 or metadata.file_id >= len(registry):
-        raise IndexError(f"file_id {metadata.file_id} is out of bounds for registry of size {len(registry)}")
-
-    file_path = registry[metadata.file_id]
+    """Retrieve the original text line from disk given its metadata.
     
+    Args:
+        metadata: Pointer to the specific file and line.
+        registry: The loaded file paths indexed by file_id.
+    """
+    file_id = get_file_id(metadata)
+    line_number = get_line_number(metadata)
+    
+    if file_id < 0 or file_id >= len(registry):
+        raise IndexError(f"file_id {file_id} is out of bounds for registry of size {len(registry)}")
+    
+    file_path = registry[file_id]
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-        # itertools.islice consumes the iterator up to the requested line in C
-        line = next(itertools.islice(f, metadata.line_number, metadata.line_number + 1), "")
+        # islice handles 0-based offset skipping efficiently
+        line = next(itertools.islice(f, line_number, line_number + 1), "")
         return line.rstrip("\r\n")
