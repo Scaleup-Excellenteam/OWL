@@ -32,6 +32,9 @@ def _build_worker(chunk_id: int, chunk_files: list[tuple[int, Path]]) -> Path:
     return chunk_path
 
 
+from src.online.completion import configure_completion
+
+
 def initialize_system(
     archive_path: Path, 
     cache_path: Path = DEFAULT_CACHE_FILE
@@ -42,6 +45,7 @@ def initialize_system(
                 trie_root, loaded_registry = pickle.load(f)
                 file_registry.clear()
                 file_registry.extend(loaded_registry)
+                configure_completion(trie_root, file_registry)
                 return trie_root, file_registry
         except (EOFError, pickle.UnpicklingError, Exception):
             print(f"Warning: Corrupt or incomplete cache at {cache_path}. Rebuilding from scratch...")
@@ -98,4 +102,5 @@ def initialize_system(
     with open(cache_path, "wb") as f:
         pickle.dump((master_root, registry), f, protocol=pickle.HIGHEST_PROTOCOL)
 
+    configure_completion(master_root, file_registry)
     return master_root, file_registry
