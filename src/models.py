@@ -13,7 +13,7 @@ class AutoCompleteData:
     score: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class SentenceMetadata:
     file_id: int
     line_number: int  # 0-based offset
