@@ -1,6 +1,6 @@
 """Score calculation and penalty rules for search matches."""
 
-from src.online.models.correction import Correction, CorrectionType
+from src.models import Correction, CorrectionType
 
 
 def calculate_score(prefix_length: int, correction: Correction | None) -> int:

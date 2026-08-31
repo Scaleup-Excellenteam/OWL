@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 # Global file registry mapping file_id to file Path
@@ -34,3 +35,25 @@ class TrieNode:
 
     def __setstate__(self, state):
         self.children, self.sentence_refs = state
+
+
+class CorrectionType(Enum):
+    """Types of spelling corrections allowed during search."""
+    REPLACEMENT = "replacement"
+    INSERTION = "insertion"
+    DELETION = "deletion"
+
+
+@dataclass
+class Correction:
+    """Records a single spelling correction made during search."""
+    correction_type: CorrectionType
+    position: int  # 1-based index in the typed prefix
+
+
+@dataclass
+class SearchCursor:
+    """Represents a paused DFS state in the Trie."""
+    node: TrieNode
+    budget: int
+    correction: Correction | None
