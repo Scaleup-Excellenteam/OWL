@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Generator
-from src.models import SentenceMetadata
+from src.models import SentenceMetadata, create_metadata
 from src.utils import normalize_text
 
 
@@ -59,4 +59,4 @@ def read_archive_sentences(
             for line_number, raw_line in enumerate(f):
                 normalized = normalize_text(raw_line)
                 if normalized:
-                    yield normalized, SentenceMetadata(file_id=file_id, line_number=line_number)
+                    yield normalized, create_metadata(file_id, line_number)

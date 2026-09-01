@@ -7,7 +7,7 @@ from src.models import TrieNode
 from src.utils import normalize_text
 
 
-class MockSentenceMetadata(NamedTuple):
+class Mockcreate_metadata(NamedTuple):
     """Hashable stand-in for the shared sentence metadata model."""
 
     file_id: int
@@ -55,7 +55,7 @@ def build_mock_system(
         _insert_sentence(
             root,
             sentence,
-            MockSentenceMetadata(file_id=0, line_number=line_number),
+            Mockcreate_metadata(0, line_number=line_number),
         )
 
     return root, [source_path]

@@ -55,10 +55,10 @@ def test_read_archive_sentences_streaming(tmp_path: Path):
     # line 2: "Third Line here." -> normalized: "third line here"
 
     expected = [
-        ("hello world", SentenceMetadata(file_id=0, line_number=0)),
-        ("this is line 2", SentenceMetadata(file_id=0, line_number=2)),
-        ("another file first line", SentenceMetadata(file_id=1, line_number=0)),
-        ("third line here", SentenceMetadata(file_id=1, line_number=2)),
+        ("hello world", create_metadata(0, line_number=0)),
+        ("this is line 2", create_metadata(0, line_number=2)),
+        ("another file first line", create_metadata(1, line_number=0)),
+        ("third line here", create_metadata(1, line_number=2)),
     ]
 
     assert len(results) == len(expected)

@@ -6,7 +6,7 @@ from pathlib import Path
 file_registry: list[Path] = []
 
 
-@dataclass
+@dataclass(slots=True)
 class AutoCompleteData:
     completed_sentence: str
     source_text: str
@@ -14,17 +14,35 @@ class AutoCompleteData:
     score: int
 
 
-@dataclass(frozen=True)
-class SentenceMetadata:
-    file_id: int
-    line_number: int  # 0-based offset
+SentenceMetadata = int
+
+
+def create_metadata(file_id: int, line_number: int) -> SentenceMetadata:
+    return (file_id << 32) | line_number
+
+
+def get_file_id(meta: SentenceMetadata) -> int:
+    return meta >> 32
+
+
+def get_line_number(meta: SentenceMetadata) -> int:
+    return meta & 0xFFFFFFFF
 
 
 class TrieNode:
+    __slots__ = ("char", "children", "sentence_refs")
+
     def __init__(self, char: str = ""):
         self.char: str = char
-        self.children: dict[str, 'TrieNode'] = {}
-        self.sentence_refs: set[SentenceMetadata] = set()
+        self.children: dict[str, "TrieNode"] | None = None
+        self.sentence_refs: list[SentenceMetadata] | None = None
+
+    def __reduce__(self):
+        # Fast C-level tuple serialization that bypasses Python reflection
+        return (TrieNode, (self.char,), (self.children, self.sentence_refs))
+
+    def __setstate__(self, state):
+        self.children, self.sentence_refs = state
 
 
 class CorrectionType(Enum):
