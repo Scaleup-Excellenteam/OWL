@@ -41,13 +41,15 @@ class SearchService:
         if not query.strip():
             return SearchResponse(query, query, None, False, [])
 
-        if multilingual:
+        should_translate = multilingual and requires_translation(query)
+
+        if should_translate:
             if self._translator is None:
                 raise RuntimeError("multilingual search requires a translator")
             translation = self._translator.translate_to_english(query)
             searched_query = translation.translated_text
             detected_language = translation.detected_language
-            translated = searched_query != query
+            translated = True
         else:
             searched_query = query
             detected_language = None
@@ -60,3 +62,11 @@ class SearchService:
             translated=translated,
             completions=self._completion_search(searched_query),
         )
+
+
+def requires_translation(query: str) -> bool:
+    """Return whether a query contains alphabetic characters outside English."""
+    return any(
+        char.isalpha() and not ("a" <= char.lower() <= "z")
+        for char in query
+    )

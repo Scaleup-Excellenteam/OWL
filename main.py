@@ -87,7 +87,7 @@ def run_program():
             print("Retry, append '#' to reset, or restart in regular mode.\n")
             continue
 
-        if multilingual:
+        if response.translated:
             language = response.detected_language or "unknown"
             print(f"\nDetected language: {language}")
             print(f"Searching in English for: '{response.searched_query}'")
