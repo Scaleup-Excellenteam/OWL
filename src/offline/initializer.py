@@ -3,7 +3,9 @@ import sys
 from pathlib import Path
 from multiprocessing import cpu_count
 import concurrent.futures
+from time import perf_counter
 
+from src.logging_config import get_logger
 from src.models import TrieNode, file_registry
 from src.offline.file_reader import build_file_registry
 from src.offline.trie_builder import build_suffix_trie, merge_tries
@@ -12,6 +14,7 @@ from src.offline.trie_builder import build_suffix_trie, merge_tries
 sys.setrecursionlimit(50000)
 
 DEFAULT_CACHE_FILE = Path("trie_cache.pkl")
+logger = get_logger("offline.initializer")
 
 
 def _build_worker_record_chunk(chunk_id: int, records_chunk: list[tuple[int, int, str]]) -> Path:
@@ -36,11 +39,21 @@ def initialize_system(
         import gc
         print(f"Found master cache ({cache_path.stat().st_size / (1024*1024):.1f} MB). Unpickling... (This might take a minute for large tries)")
         start = time.time()
+        logger.info(
+            "Loading Trie cache size_bytes=%d",
+            cache_path.stat().st_size,
+        )
         gc.disable()
         with open(cache_path, "rb") as f:
             trie_root, loaded_registry = pickle.load(f)
         gc.enable()
-        print(f"Unpickled in {time.time() - start:.2f}s!")
+        load_duration = time.time() - start
+        print(f"Unpickled in {load_duration:.2f}s!")
+        logger.info(
+            "Trie cache loaded files=%d duration_ms=%.2f",
+            len(loaded_registry),
+            load_duration * 1000,
+        )
         
         file_registry.clear()
         file_registry.extend(loaded_registry)
@@ -49,6 +62,7 @@ def initialize_system(
 
     # Registry does not exist, build it from scratch
     registry = build_file_registry(archive_path)
+    logger.info("Building Trie from archive files=%d", len(registry))
     file_registry.clear()
     file_registry.extend(registry)
     
@@ -85,6 +99,7 @@ def initialize_system(
     ]
     
     print(f"Distributing Trie build across {len(chunks)} workers...")
+    build_started = perf_counter()
     
     # 1. Map Phase
     chunk_paths = []
@@ -105,6 +120,14 @@ def initialize_system(
     print("Saving master cache...")
     with open(cache_path, "wb") as f:
         pickle.dump((master_root, registry), f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    logger.info(
+        "Trie build completed files=%d lines=%d workers=%d duration_ms=%.2f",
+        len(registry),
+        total_lines,
+        len(chunks),
+        (perf_counter() - build_started) * 1000,
+    )
 
     configure_completion(master_root, file_registry)
     return master_root, file_registry

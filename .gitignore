@@ -10,6 +10,7 @@ __pycache__/
 .cache/
 Archive/
 SampleArchive/
+logs/
 
 # Generated system-test reports and golden candidates
 tests/system/reports/

@@ -1,3 +1,5 @@
+import argparse
+from collections.abc import Sequence
 import sys
 from pathlib import Path
 
@@ -7,7 +9,10 @@ from src.google_features import (
     TranslationServiceError,
 )
 from src.offline.initializer import initialize_system
+from src.logging_config import configure_logging, get_logger
 from src.search_service import SearchAlternative, SearchResponse, SearchService
+
+logger = get_logger("main")
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -55,6 +60,7 @@ def choose_interpretation(response: SearchResponse) -> SearchAlternative | None:
 
 
 def run_program():
+    logger.info("OWL runtime starting")
     load_env()
     archive_path = Path("Archive")
     print("============================================================")
@@ -64,11 +70,13 @@ def run_program():
     initialize_system(archive_path)
 
     multilingual = choose_multilingual_mode()
+    logger.info("Search mode selected multilingual=%s", multilingual)
     translator = None
     if multilingual:
         try:
             translator = GoogleTranslator.from_environment()
         except TranslationConfigurationError as exc:
+            logger.warning("Multilingual mode unavailable reason=%s", type(exc).__name__)
             print(f"Multilingual search is unavailable: {exc}")
             print("Continuing in regular English search mode.\n")
             multilingual = False
@@ -82,6 +90,7 @@ def run_program():
         try:
             user_input = input(current_query) if current_query else input()
         except (KeyboardInterrupt, EOFError):
+            logger.info("OWL runtime stopped by user")
             print("\nExiting. Goodbye!")
             break
 
@@ -102,6 +111,7 @@ def run_program():
                 multilingual=multilingual,
             )
         except TranslationServiceError as exc:
+            logger.warning("Translation failed reason=%s", type(exc).__name__)
             print(f"\nTranslation failed: {exc}")
             print("Retry, append '#' to reset, or restart in regular mode.\n")
             continue
@@ -124,6 +134,16 @@ def run_program():
             keyboard_corrected = chosen.keyboard_corrected
             completions = chosen.completions
 
+        logger.info(
+            "Query completed query_length=%d results=%d translated=%s "
+            "keyboard_corrected=%s alternatives=%d",
+            len(current_query),
+            len(completions),
+            translated,
+            keyboard_corrected,
+            len(response.alternatives),
+        )
+
         if keyboard_corrected:
             print(
                 f"\nKeyboard layout corrected: "
@@ -145,7 +165,20 @@ def run_program():
         print()
 
 
-def main():
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Run the OWL autocomplete CLI.")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="show detailed runtime logs in the terminal",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None):
+    arguments = _build_parser().parse_args(argv)
+    configure_logging(debug=arguments.debug)
+    logger.debug("Debug terminal logging enabled")
     run_program()
 
 

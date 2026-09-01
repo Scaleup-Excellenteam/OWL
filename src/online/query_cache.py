@@ -4,10 +4,12 @@ from copy import deepcopy
 from dataclasses import dataclass
 from threading import RLock
 
+from src.logging_config import get_logger
 from src.models import AutoCompleteData
 
 
 DEFAULT_QUERY_CACHE_CAPACITY = 500
+logger = get_logger("online.query_cache")
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,12 +96,22 @@ class QueryResultCache:
             entry = self._entries.get(query)
             if entry is None:
                 self._misses += 1
+                logger.debug(
+                    "Query cache miss query_length=%d size=%d",
+                    len(query),
+                    len(self._entries),
+                )
                 return None
 
             self._clock += 1
             self._hits += 1
             entry.frequency += 1
             entry.last_access = self._clock
+            logger.debug(
+                "Query cache hit query_length=%d frequency=%d",
+                len(query),
+                entry.frequency,
+            )
             return list(deepcopy(entry.results))
 
     def put(self, query: str, results: list[AutoCompleteData]) -> None:
@@ -130,6 +142,11 @@ class QueryResultCache:
                 )
                 del self._entries[evicted_query]
                 self._evictions += 1
+                logger.debug(
+                    "Query cache eviction evicted_query_length=%d size=%d",
+                    len(evicted_query),
+                    len(self._entries),
+                )
 
             self._entries[query] = _CacheEntry(
                 results=tuple(deepcopy(results)),
