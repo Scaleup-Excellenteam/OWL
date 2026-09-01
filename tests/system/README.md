@@ -2,12 +2,17 @@
 
 The bounded suite loads the committed `data/sample_trie_cache.pkl` and compares
 the public `get_best_k_completions()` API with an independent scan of the copied
-corpus. Normal test runs never rebuild the sample cache.
+corpus. Its focused contract cases cover all reachable score-penalty bands,
+substring and sentence boundaries, normalization, short and empty queries,
+duplicate occurrences, ambiguous alignments, result shape, and fewer-than-five
+or empty result sets. Normal test runs never rebuild the sample cache.
 
 Run the bounded suite:
 
 ```bash
-.venv/bin/python -m pytest tests/system/test_bounded_corpus.py
+.venv/bin/python -m pytest \
+  tests/system/test_bounded_corpus.py \
+  tests/system/test_bounded_edge_cases.py
 ```
 
 Only regenerate the sample cache after intentionally changing the manifest or
