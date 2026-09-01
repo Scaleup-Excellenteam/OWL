@@ -71,38 +71,58 @@ def _best_scores_by_sentence(
     return best_results
 
 
-def is_valid_match(query: str, text: str, errors: int = 0) -> bool:
-    """Check if query is a valid fuzzy prefix of text with at most 1 error."""
-    if errors > 1: return False
-    i, j = 0, 0
-    while i < len(query) and j < len(text):
-        if query[i] == text[j]:
-            i += 1
-            j += 1
+from src.models import Correction, CorrectionType
+
+def get_valid_match_correction(query: str, text: str, q_idx: int = 0, t_idx: int = 0, current_corr: Correction | None = None) -> tuple[bool, Correction | None]:
+    """Check if query is a valid fuzzy prefix of text with at most 1 error, returning the best correction."""
+    while q_idx < len(query) and t_idx < len(text):
+        if query[q_idx] == text[t_idx]:
+            q_idx += 1
+            t_idx += 1
         else:
-            if errors == 1: return False
-            # Try deletion (query missing a char)
-            if is_valid_match(query[i:], text[j+1:], 1): return True
-            # Try insertion (query has extra char)
-            if is_valid_match(query[i+1:], text[j:], 1): return True
-            # Try replacement
-            if is_valid_match(query[i+1:], text[j+1:], 1): return True
-            return False
+            if current_corr is not None:
+                return False, None
+                
+            # Deletion: query has extra char, we skip it to match text
+            del_corr = Correction(CorrectionType.DELETION, q_idx + 1)
+            is_match, final_corr = get_valid_match_correction(query, text, q_idx + 1, t_idx, del_corr)
+            if is_match: return True, final_corr
             
-    # If query is longer than text, remaining chars count as insertions
-    return errors + (len(query) - i) <= 1
+            # Insertion: query is missing a char, text advances
+            ins_corr = Correction(CorrectionType.INSERTION, q_idx + 1)
+            is_match, final_corr = get_valid_match_correction(query, text, q_idx, t_idx + 1, ins_corr)
+            if is_match: return True, final_corr
+            
+            # Replacement: query char replaced to match text char
+            rep_corr = Correction(CorrectionType.REPLACEMENT, q_idx + 1)
+            is_match, final_corr = get_valid_match_correction(query, text, q_idx + 1, t_idx + 1, rep_corr)
+            if is_match: return True, final_corr
+            
+            return False, None
+            
+    if q_idx == len(query):
+        return True, current_corr
+        
+    remaining = len(query) - q_idx
+    if current_corr is None and remaining == 1:
+        # One extra char at the very end of query
+        return True, Correction(CorrectionType.DELETION, q_idx + 1)
+        
+    return False, None
 
 
-def is_fuzzy_substring(query: str, text: str) -> bool:
-    """Check if query fuzzy matches ANY word-boundary suffix of the text."""
-    if is_valid_match(query, text):
-        return True
+def get_fuzzy_substring_correction(query: str, text: str) -> tuple[bool, Correction | None]:
+    """Check if query fuzzy matches ANY word-boundary suffix, returning the correction."""
+    is_match, corr = get_valid_match_correction(query, text)
+    if is_match:
+        return True, corr
         
     for i in range(1, len(text)):
         if text[i-1] == " ":
-            if is_valid_match(query, text[i:]):
-                return True
-    return False
+            is_match, corr = get_valid_match_correction(query, text[i:])
+            if is_match:
+                return True, corr
+    return False, None
 
 
 def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
@@ -154,18 +174,21 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
             if sentence is None:
                 continue
                 
+            final_score = score
             # Fine Filter: If query exceeded trie depth, verify the match manually
             if len(normalized_prefix) > 15:
                 normalized_sentence = normalize_text(sentence)
-                if not is_fuzzy_substring(normalized_prefix, normalized_sentence):
+                is_match, real_corr = get_fuzzy_substring_correction(normalized_prefix, normalized_sentence)
+                if not is_match:
                     continue
+                final_score = calculate_score(len(normalized_prefix), real_corr)
                     
             bucket_completions.append(
                 AutoCompleteData(
                     completed_sentence=sentence,
                     source_text=str(_file_registry[get_file_id(metadata)]),
                     offset=get_line_number(metadata),
-                    score=score,
+                    score=final_score,
                 )
             )
             
@@ -175,10 +198,16 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
         )
         
         completions.extend(bucket_completions)
-        
-        # If we have collected at least 5 completions across the highest buckets, we are done!
-        if len(completions) >= 5:
-            break
+
+    # Re-sort everything because Fine Filter might have lowered some scores
+    completions.sort(
+        key=lambda c: (
+            -c.score,
+            c.completed_sentence,
+            c.source_text,
+            c.offset,
+        )
+    )
 
     results = completions[:5]
     _query_cache.put(normalized_prefix, results)
