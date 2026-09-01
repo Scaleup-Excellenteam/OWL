@@ -1,8 +1,14 @@
 import logging
 from logging.handlers import RotatingFileHandler
+import re
 
 import main as main_module
-from src.logging_config import LOGGER_NAME, configure_logging, get_logger
+from src.logging_config import (
+    LOGGER_NAME,
+    TERMINAL_PREFIX,
+    configure_logging,
+    get_logger,
+)
 from src.search_service import SearchService
 
 
@@ -34,8 +40,44 @@ def test_debug_mode_writes_debug_to_file_and_terminal(tmp_path, capsys):
     get_logger("test").debug("diagnostic details")
     _flush_owl_handlers()
 
-    assert "diagnostic details" in capsys.readouterr().err
-    assert "diagnostic details" in log_path.read_text(encoding="utf-8")
+    terminal_output = capsys.readouterr().err
+    assert TERMINAL_PREFIX in terminal_output
+    assert "DEBUG" in terminal_output
+    assert "TEST" in terminal_output
+    assert "diagnostic details" in terminal_output
+
+    file_output = log_path.read_text(encoding="utf-8")
+    assert "diagnostic details" in file_output
+    assert TERMINAL_PREFIX not in file_output
+    assert "\033[" not in file_output
+
+
+def test_debug_terminal_uses_ansi_colors_when_supported(tmp_path, capsys):
+    configure_logging(debug=True, color=True, log_directory=tmp_path)
+
+    get_logger("search_service").warning("service unavailable")
+    _flush_owl_handlers()
+
+    terminal_output = capsys.readouterr().err
+    assert "\033[1;36m[OWL LOG]\033[0m" in terminal_output
+    assert "\033[33mWARNING" in terminal_output
+    assert "\033[35mSEARCH_SERVICE" in terminal_output
+
+
+def test_no_color_environment_disables_ansi_sequences(
+    monkeypatch,
+    tmp_path,
+    capsys,
+):
+    monkeypatch.setenv("NO_COLOR", "1")
+    configure_logging(debug=True, color=True, log_directory=tmp_path)
+
+    get_logger("test").error("plain diagnostic")
+    _flush_owl_handlers()
+
+    terminal_output = capsys.readouterr().err
+    assert TERMINAL_PREFIX in terminal_output
+    assert re.search(r"\x1b\[[0-9;]*m", terminal_output) is None
 
 
 def test_logging_uses_bounded_rotating_file_handler(tmp_path):
