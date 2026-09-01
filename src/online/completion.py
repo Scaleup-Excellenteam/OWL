@@ -3,27 +3,46 @@
 from pathlib import Path
 
 from src.models import AutoCompleteData, SentenceMetadata, TrieNode, get_file_id, get_line_number
+from src.online.query_cache import (
+    DEFAULT_QUERY_CACHE_CAPACITY,
+    QueryCacheInfo,
+    QueryResultCache,
+)
 from src.online.scoring import calculate_score
 from src.online.search import search
 from src.utils import get_original_sentence, normalize_text
 
 _trie_root: TrieNode | None = None
 _file_registry: list[Path] | None = None
+_query_cache = QueryResultCache()
 
 
 def configure_completion(
     trie_root: TrieNode,
     registry: list[Path],
+    *,
+    query_cache_capacity: int = DEFAULT_QUERY_CACHE_CAPACITY,
 ) -> None:
     """Configure the initialized data used by completion requests.
 
     Args:
         trie_root: Root of the suffix trie to search.
         registry: File paths indexed by ``SentenceMetadata.file_id``.
+        query_cache_capacity: Maximum number of query results to retain.
     """
-    global _trie_root, _file_registry
+    global _trie_root, _file_registry, _query_cache
     _trie_root = trie_root
     _file_registry = list(registry)
+    _query_cache = QueryResultCache(query_cache_capacity)
+
+
+def get_query_cache_info() -> QueryCacheInfo:
+    """Return current autocomplete query-cache statistics.
+
+    Returns:
+        A read-only snapshot of capacity, occupancy, hits, and misses.
+    """
+    return _query_cache.info()
 
 
 def _best_scores_by_sentence(
@@ -108,6 +127,10 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
     if not normalized_prefix:
         return []
 
+    cached_completions = _query_cache.get(normalized_prefix)
+    if cached_completions is not None:
+        return cached_completions
+
     # 1. Group candidates by score to avoid processing lower scores if we have enough
     from collections import defaultdict
     best_scores = _best_scores_by_sentence(_trie_root, normalized_prefix)
@@ -157,4 +180,6 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
         if len(completions) >= 5:
             break
 
-    return completions[:5]
+    results = completions[:5]
+    _query_cache.put(normalized_prefix, results)
+    return results
