@@ -11,9 +11,12 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from src.logging_config import get_logger
+
 
 TRANSLATE_ENDPOINT = "https://translation.googleapis.com/language/translate/v2"
 API_KEY_ENV_VAR = "GOOGLE_TRANSLATE_API_KEY"
+logger = get_logger("google_features.translation")
 
 
 class TranslationConfigurationError(RuntimeError):
@@ -89,12 +92,15 @@ class GoogleTranslator:
             with self._open_url(request, timeout=self._timeout_seconds) as response:
                 payload = json.loads(response.read().decode("utf-8"))
         except HTTPError as exc:
+            logger.warning("Translation request failed status=%d", exc.code)
             raise TranslationServiceError(
                 f"Google Translation returned HTTP {exc.code}"
             ) from exc
         except (URLError, TimeoutError) as exc:
+            logger.warning("Translation request unavailable reason=%s", type(exc).__name__)
             raise TranslationServiceError("Google Translation is unavailable") from exc
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            logger.warning("Translation response invalid reason=%s", type(exc).__name__)
             raise TranslationServiceError(
                 "Google Translation returned an invalid response"
             ) from exc
@@ -109,7 +115,16 @@ class GoogleTranslator:
             ) from exc
 
         if not translated_text:
+            logger.warning("Translation response contained empty text")
             raise TranslationServiceError("Google Translation returned empty text")
+
+        logger.debug(
+            "Translation completed source_length=%d result_length=%d "
+            "detected_language=%s",
+            len(text),
+            len(translated_text),
+            detected_language or "unknown",
+        )
 
         return TranslationResult(
             original_text=text,

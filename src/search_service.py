@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import re
+from time import perf_counter
 from typing import Callable, Protocol
 
 from src.google_features.keyboard_layout import (
@@ -10,7 +11,10 @@ from src.google_features.keyboard_layout import (
 )
 from src.google_features.translation import TranslationResult
 from src.models import AutoCompleteData
+from src.logging_config import get_logger
 from src.online.completion import get_best_k_completions
+
+logger = get_logger("search_service")
 
 
 class Translator(Protocol):
@@ -57,7 +61,9 @@ class SearchService:
 
     def search(self, query: str, *, multilingual: bool = False) -> SearchResponse:
         """Search normally, correct a Hebrew layout error, or translate."""
+        started = perf_counter()
         if not query.strip():
+            logger.debug("Empty query skipped query_length=%d", len(query))
             return SearchResponse(query, query, None, False, [])
 
         should_translate = multilingual and requires_translation(query)
@@ -70,6 +76,12 @@ class SearchService:
             keyboard_completions: list[AutoCompleteData] = []
             keyboard_match = False
             if keyboard_query is not None:
+                logger.debug(
+                    "Keyboard-layout candidate generated query_length=%d "
+                    "candidate_length=%d",
+                    len(query),
+                    len(keyboard_query),
+                )
                 keyboard_completions = self._completion_search(keyboard_query)
                 keyboard_match = has_exact_whole_query_match(
                     keyboard_query,
@@ -127,13 +139,23 @@ class SearchService:
             translated = False
             translated_completions = self._completion_search(searched_query)
 
-        return SearchResponse(
+        response = SearchResponse(
             original_query=query,
             searched_query=searched_query,
             detected_language=detected_language,
             translated=translated,
             completions=translated_completions,
         )
+        logger.debug(
+            "Search service completed query_length=%d results=%d multilingual=%s "
+            "translated=%s duration_ms=%.2f",
+            len(query),
+            len(response.completions),
+            multilingual,
+            response.translated,
+            (perf_counter() - started) * 1000,
+        )
+        return response
 
 
 def keyboard_layout_candidate(query: str) -> str | None:

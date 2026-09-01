@@ -73,6 +73,26 @@ multilingual mode the complete accumulated query is translated when it contains
 non-English letters so Google receives the full linguistic context. Append `#`
 to reset the query.
 
+## Runtime logging
+
+Regular execution keeps the interactive terminal output user-friendly while
+writing operational events at `INFO` level or above to `logs/owl.log`:
+
+```bash
+python main.py
+```
+
+Enable detailed diagnostics in both the terminal and the log file with:
+
+```bash
+python main.py --debug
+```
+
+The local log rotates at 5 MB and retains three backups. Logs contain runtime
+metadata such as durations, query lengths, result counts, and cache activity.
+They do not contain API keys or full user queries. The entire `logs/` directory
+is excluded from Git.
+
 ## Architecture
 
 ```text
