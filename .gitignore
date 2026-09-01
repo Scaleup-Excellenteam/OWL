@@ -15,6 +15,7 @@ SampleArchive/
 venv/
 ENV/
 env/
+.env
 
 # Testing & IDE
 .pytest_cache/
