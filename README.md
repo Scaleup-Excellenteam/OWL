@@ -40,6 +40,15 @@ multilingual mode is selected. The CLI shows the detected language and
 translated query only when translation occurred; returned sentences, source
 paths, offsets, and Phase A scores still come from the original archive.
 
+For Hebrew input, multilingual mode also checks whether the text was intended
+as English but typed with the Hebrew keyboard layout. For example, `פטאיםמ` is
+converted to `python`, and `'ןמגם'` is converted to `window`. The correction is accepted only when the converted text
+appears as a complete word or phrase in the Trie results; a substring such as
+`akuo` inside `pakuo` is rejected. If both the keyboard correction and Google
+translation produce results, the CLI asks the user which interpretation was
+intended. This check reuses the existing Trie and does not add Offline data or
+another cache.
+
 1. Create or select a Google Cloud project.
 2. Enable billing and the Cloud Translation API.
 3. Create an API key and restrict it to the Cloud Translation API.
@@ -69,6 +78,7 @@ to reset the query.
 ```text
 CLI
   -> SearchService
+      -> Hebrew keyboard-layout correction (multilingual mode only)
       -> GoogleTranslator (multilingual mode only)
       -> get_best_k_completions()
           -> Trie
