@@ -24,7 +24,10 @@ def load_env():
                 if line and not line.startswith("#"):
                     if "=" in line:
                         k, v = line.split("=", 1)
-                        os.environ[k.strip()] = v.strip().strip("'\"")
+                        k = k.strip()
+                        if k.startswith("export "):
+                            k = k[7:].strip()
+                        os.environ[k] = v.strip().strip("'\"")
 
 
 def choose_multilingual_mode() -> bool:
