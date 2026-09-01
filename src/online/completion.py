@@ -108,34 +108,53 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
     if not normalized_prefix:
         return []
 
+    # 1. Group candidates by score to avoid processing lower scores if we have enough
+    from collections import defaultdict
+    best_scores = _best_scores_by_sentence(_trie_root, normalized_prefix)
+    score_buckets = defaultdict(list)
+    for metadata, score in best_scores.values():
+        score_buckets[score].append(metadata)
+
     completions = []
-    for metadata, score in _best_scores_by_sentence(
-        _trie_root,
-        normalized_prefix,
-    ).values():
-        sentence = get_original_sentence(metadata, _file_registry)
+    from src.utils import get_original_sentences_batched
+
+    # 2. Iterate from highest score to lowest
+    for score in sorted(score_buckets.keys(), reverse=True):
+        bucket_metadata = score_buckets[score]
         
-        # Fine Filter: If query exceeded trie depth, verify the match manually
-        if len(normalized_prefix) > 15:
-            normalized_sentence = normalize_text(sentence)
-            if not is_fuzzy_substring(normalized_prefix, normalized_sentence):
+        # Batch fetch all required sentences from disk for this score group
+        fetched_sentences = get_original_sentences_batched(bucket_metadata, _file_registry)
+        
+        bucket_completions = []
+        for metadata in bucket_metadata:
+            sentence = fetched_sentences.get(metadata)
+            if sentence is None:
                 continue
                 
-        completions.append(
-            AutoCompleteData(
-                completed_sentence=sentence,
-                source_text=str(_file_registry[get_file_id(metadata)]),
-                offset=get_line_number(metadata),
-                score=score,
+            # Fine Filter: If query exceeded trie depth, verify the match manually
+            if len(normalized_prefix) > 15:
+                normalized_sentence = normalize_text(sentence)
+                if not is_fuzzy_substring(normalized_prefix, normalized_sentence):
+                    continue
+                    
+            bucket_completions.append(
+                AutoCompleteData(
+                    completed_sentence=sentence,
+                    source_text=str(_file_registry[get_file_id(metadata)]),
+                    offset=get_line_number(metadata),
+                    score=score,
+                )
             )
+            
+        # Sort this bucket alphabetically to break score ties
+        bucket_completions.sort(
+            key=lambda c: (c.completed_sentence, c.source_text, c.offset)
         )
+        
+        completions.extend(bucket_completions)
+        
+        # If we have collected at least 5 completions across the highest buckets, we are done!
+        if len(completions) >= 5:
+            break
 
-    completions.sort(
-        key=lambda completion: (
-            -completion.score,
-            completion.completed_sentence,
-            completion.source_text,
-            completion.offset,
-        )
-    )
     return completions[:5]

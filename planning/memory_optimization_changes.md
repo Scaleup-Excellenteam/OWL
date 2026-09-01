@@ -50,3 +50,10 @@ The Map-Reduce builder was using `ProcessPoolExecutor` with `cpu_count()`. On mo
 **The Fix:**
 - We strictly capped the max workers to `min(4, cpu_count() // 2)`.
 - This ensures the Map phase never holds more than a few concurrent chunks in RAM at once, preventing massive Out-Of-Memory (OOM) spikes during the initial build phase.
+
+## 7. Fast Serialization & Startup (`gc.disable` + Tuple `__reduce__`)
+While the Trie was slimmed down in RAM, serializing and deserializing tens of millions of nodes to disk via Python's standard `pickle` caused extreme cold-start and save freezes (taking over 5 to 10 minutes).
+
+**The Fix:**
+- **C-Level Tuple Serialization:** We implemented a custom `__reduce__` method on `TrieNode` to serialize nodes as raw native tuples `(char, children, refs)`, bypassing Python's slow reflection.
+- **Garbage Collection Pausing:** When unpickling millions of objects, Python's GC tracking causes an $O(N^2)$ slowdown. Wrapping `pickle.load()` and `pickle.dump()` in `gc.disable()` brought the master cache startup time down from **minutes to under 5 seconds**.
