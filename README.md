@@ -88,6 +88,14 @@ Enable detailed diagnostics in both the terminal and the log file with:
 python main.py --debug
 ```
 
+Debug terminal logs use a compact `[OWL LOG]` layout with level-specific ANSI
+colors when the terminal supports them. Set the standard `NO_COLOR` environment
+variable to keep the debug layout but disable colors:
+
+```bash
+NO_COLOR=1 python main.py --debug
+```
+
 The local log rotates at 5 MB and retains three backups. Logs contain runtime
 metadata such as durations, query lengths, result counts, and cache activity.
 They do not contain API keys or full user queries. The entire `logs/` directory
