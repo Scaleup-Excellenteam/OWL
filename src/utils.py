@@ -28,6 +28,8 @@ def normalize_text(text: str) -> str:
     return " ".join(cleaned.split())
 
 
+import linecache
+
 def get_original_sentence(metadata: SentenceMetadata, registry: list[Path]) -> str:
     """Retrieve the original text line from disk given its metadata.
     
@@ -41,40 +43,25 @@ def get_original_sentence(metadata: SentenceMetadata, registry: list[Path]) -> s
     if file_id < 0 or file_id >= len(registry):
         raise IndexError(f"file_id {file_id} is out of bounds for registry of size {len(registry)}")
     
-    file_path = registry[file_id]
-    with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-        # islice handles 0-based offset skipping efficiently
-        line = next(itertools.islice(f, line_number, line_number + 1), "")
-        return line.rstrip("\r\n")
+    file_path = str(registry[file_id])
+    # linecache is 1-indexed, our line_number is 0-indexed
+    line = linecache.getline(file_path, line_number + 1)
+    return line.rstrip("\r\n")
 
 
 def get_original_sentences_batched(
     metadata_list: list[SentenceMetadata], registry: list[Path]
 ) -> dict[SentenceMetadata, str]:
-    """Fetch multiple sentences from disk efficiently in a single pass per file."""
-    # Group line numbers by file_id
-    file_to_lines = defaultdict(list)
-    for meta in metadata_list:
-        file_to_lines[get_file_id(meta)].append(get_line_number(meta))
-        
+    """Fetch multiple sentences instantly using linecache."""
     results = {}
-    for file_id, line_numbers in file_to_lines.items():
-        if file_id < 0 or file_id >= len(registry):
-            continue
-            
-        target_lines = set(line_numbers)
-        file_path = registry[file_id]
+    for meta in metadata_list:
+        file_id = get_file_id(meta)
+        line_number = get_line_number(meta)
         
-        try:
-            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-                for current_line_num, line in enumerate(f):
-                    if current_line_num in target_lines:
-                        meta = create_metadata(file_id, current_line_num)
-                        results[meta] = line.rstrip("\r\n")
-                        target_lines.remove(current_line_num)
-                        if not target_lines:
-                            break
-        except OSError:
-            pass
+        if 0 <= file_id < len(registry):
+            file_path = str(registry[file_id])
+            line = linecache.getline(file_path, line_number + 1)
+            if line:
+                results[meta] = line.rstrip("\r\n")
             
     return results

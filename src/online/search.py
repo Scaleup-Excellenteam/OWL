@@ -43,7 +43,6 @@ def _dfs(
         return
 
     # Only accept truncated leaves if they actually reached the depth limit!
-    # If trie_depth < 15, it's a natural leaf (the sentence ended), so it can't complete a longer query.
     if node.children is None:
         if trie_depth >= 15:
             refs = _gather_refs(node, 25)

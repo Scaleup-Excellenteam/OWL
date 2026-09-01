@@ -161,12 +161,17 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
     completions = []
     from src.utils import get_original_sentences_batched
 
-    # 2. Iterate from highest score to lowest
+    # 2. Batch fetch ALL required sentences from disk at once
+    # This prevents opening and scanning the same file multiple times for different score buckets
+    all_metadata = []
+    for bucket in score_buckets.values():
+        all_metadata.extend(bucket)
+    
+    fetched_sentences = get_original_sentences_batched(all_metadata, _file_registry)
+
+    # 3. Iterate from highest score to lowest
     for score in sorted(score_buckets.keys(), reverse=True):
         bucket_metadata = score_buckets[score]
-        
-        # Batch fetch all required sentences from disk for this score group
-        fetched_sentences = get_original_sentences_batched(bucket_metadata, _file_registry)
         
         bucket_completions = []
         for metadata in bucket_metadata:
@@ -198,6 +203,12 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
         )
         
         completions.extend(bucket_completions)
+        
+        # If we have collected enough highly-scored completions, we can stop processing lower buckets!
+        # We check for >= 15 instead of 5 to ensure that even if the Fine Filter lowers
+        # some scores, we still safely capture the true top 5 after sorting.
+        if len(completions) >= 15:
+            break
 
     # Re-sort everything because Fine Filter might have lowered some scores
     completions.sort(
