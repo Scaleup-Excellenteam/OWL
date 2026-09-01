@@ -1,0 +1,30 @@
+{
+  "cache_sha256": "f6393a9e1dd5ecb6c96d6b271cf3a42d3b2014587842805a10df11562453a187",
+  "max_non_empty_lines_per_file": 500,
+  "record_count": 4687,
+  "schema_version": 1,
+  "selected_non_empty_line_counts": {
+    "0130903086.txt": 500,
+    "python-3.8.4-docs-text/library/base64.txt": 187,
+    "python-3.8.4-docs-text/library/profile.txt": 500,
+    "rfc7501.txt": 500,
+    "rfc7668.txt": 500,
+    "rfc7835.txt": 500,
+    "rfc8003.txt": 500,
+    "rfc8170.txt": 500,
+    "rfc8337.txt": 500,
+    "userguide.txt": 500
+  },
+  "source_sha256": {
+    "0130903086.txt": "ca0081e602a2744a3fdbcf5e393cbe1fff06cdc571fdf63baf56332a82c6f4a2",
+    "python-3.8.4-docs-text/library/base64.txt": "5b1064e9b000a0ec59f77c927dd16ee9b044f08bd313c0239b0f29e254f96ef5",
+    "python-3.8.4-docs-text/library/profile.txt": "9638cf25dcd8f62af9f8b6a598d5c96ba42193e8e4e340f777e602270fbd84f6",
+    "rfc7501.txt": "be4cacae369e62f26815a3969857d1ff5119debc769bb3c4e27b4de5b36c0fbd",
+    "rfc7668.txt": "62ccbf2e2cdd2cbd7fe270efa0c80e2e3f92702976712134f987c1b6f8a7ecd1",
+    "rfc7835.txt": "79786d37fd83677cf000cf5886334ca79c7510a45e9e5af5a934977b8fd5c8b6",
+    "rfc8003.txt": "09c5a2e662ee042370caadcf803b7b7e886b69a470f86c93e424db3ff1c29c74",
+    "rfc8170.txt": "18d97786bcefe710be5aca45c91f70d825f6913bc88ce9a21f12605c20146bcf",
+    "rfc8337.txt": "9a2d9fe65dce6f6192ca21acdd3662b53d8a958b65489bc72dd8270a55d024e7",
+    "userguide.txt": "ef75fe2624a07a3038bb0658b990f636ffde2d0ccd304caa4b90ef20ccdd272a"
+  }
+}

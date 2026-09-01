@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "queries": [
+    {"id": "common_short", "query": "the"},
+    {"id": "example_phrase", "query": "this is"},
+    {"id": "python", "query": "python"},
+    {"id": "internet_protocol", "query": "internet protocol"},
+    {"id": "security", "query": "security considerations"},
+    {"id": "base64", "query": "base64 encoded bytes"},
+    {"id": "profiling", "query": "deterministic profiling"},
+    {"id": "long_exact", "query": "this document provides"},
+    {
+      "id": "long_one_edit",
+      "query": "this document provydes a terminology"
+    },
+    {"id": "no_match", "query": "qzxwv nonexistent phrase"}
+  ]
+}
