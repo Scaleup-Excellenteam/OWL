@@ -35,3 +35,4 @@ google-credentials*.json
 # AI Agent Instructions
 agents.md
 gemini.md
+tests/system/data/sample_trie_cache.pkl
