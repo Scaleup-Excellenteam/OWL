@@ -13,6 +13,20 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
+import os
+
+def load_env():
+    env_path = Path(".env")
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    if "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ[k.strip()] = v.strip().strip("'\"")
+
+
 def choose_multilingual_mode() -> bool:
     """Ask which search experience to use for the current CLI session."""
     print("Choose search mode:")
@@ -22,6 +36,7 @@ def choose_multilingual_mode() -> bool:
 
 
 def run_program():
+    load_env()
     archive_path = Path("Archive")
     print("============================================================")
     print("🚀 AUTO-COMPLETE SEARCH ENGINE")
