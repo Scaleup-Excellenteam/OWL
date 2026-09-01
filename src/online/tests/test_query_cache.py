@@ -90,4 +90,3 @@ def test_cache_rejects_non_positive_capacity() -> None:
     """Require cache configurations that retain at least one entry."""
     with pytest.raises(ValueError, match="positive"):
         QueryResultCache(capacity=0)
-
