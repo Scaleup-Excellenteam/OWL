@@ -21,6 +21,12 @@ env/
 .vscode/
 .idea/
 
+# Local credentials and environment files
+.env
+.env.*
+service-account*.json
+google-credentials*.json
+
 # AI Agent Instructions
 agents.md
 gemini.md
