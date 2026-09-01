@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "archive_file_count": 1504,
+  "cache_file": "trie_cache.pkl",
+  "queries": [
+    {
+      "id": "common_short",
+      "query": "the",
+      "results": [
+        {
+          "completed_sentence": "(LLC) and the Media Access Control (MAC). As you can see in Figure 1–6, the",
+          "source_text": "Archive/0130903086.txt",
+          "offset": 628,
+          "score": 6
+        },
+        {
+          "completed_sentence": "3. encapsulates the segment inside a packet at the Network layer with the",
+          "source_text": "Archive/0130903086.txt",
+          "offset": 836,
+          "score": 6
+        },
+        {
+          "completed_sentence": "9. Finally, the receiving computer receives the bits and reverses the",
+          "source_text": "Archive/0130903086.txt",
+          "offset": 825,
+          "score": 6
+        },
+        {
+          "completed_sentence": "However, if we were to use a layered design, we could separate the",
+          "source_text": "Archive/0130903086.txt",
+          "offset": 131,
+          "score": 6
+        },
+        {
+          "completed_sentence": "The Data Link layer is the layer connects the software protocols to the",
+          "source_text": "Archive/0130903086.txt",
+          "offset": 610,
+          "score": 6
+        }
+      ]
+    },
+    {
+      "id": "example_phrase",
+      "query": "this is",
+      "results": [
+        {
+          "completed_sentence": "4.56e0, you must adjust the values so they have the same exponent. One way to do this is",
+          "source_text": "Archive/Art Of Intel x86 Assembly.txt",
+          "offset": 75554,
+          "score": 14
+        },
+        {
+          "completed_sentence": "; average of these two (this is",
+          "source_text": "Archive/Art Of Intel x86 Assembly.txt",
+          "offset": 134428,
+          "score": 14
+        },
+        {
+          "completed_sentence": "; average of these two (this is",
+          "source_text": "Archive/Art Of Intel x86 Assembly.txt",
+          "offset": 134457,
+          "score": 14
+        },
+        {
+          "completed_sentence": "A breakpoint is a point in your program where control returns to the debugger. This is",
+          "source_text": "Archive/Art Of Intel x86 Assembly.txt",
+          "offset": 47348,
+          "score": 14
+        },
+        {
+          "completed_sentence": "An alternative to ignoring any of these errors is to abort with an error message. This is",
+          "source_text": "Archive/Art Of Intel x86 Assembly.txt",
+          "offset": 81445,
+          "score": 14
+        }
+      ]
+    },
+    {
+      "id": "python",
+      "query": "python",
+      "results": [
+        {
+          "completed_sentence": "## Any valid format datetime format string can be used (see the python",
+          "source_text": "Archive/Matplotlib.txt",
+          "offset": 1816,
+          "score": 12
+        },
+        {
+          "completed_sentence": "$ python",
+          "source_text": "Archive/Deep-Learning-with-PyTorch.txt",
+          "offset": 1619,
+          "score": 12
+        },
+        {
+          "completed_sentence": "..code-block:: python",
+          "source_text": "Archive/Matplotlib.txt",
+          "offset": 4173,
+          "score": 12
+        },
+        {
+          "completed_sentence": "A ‘classic’ style sheet is provided so reverting to the 1.x default values is a single line of python",
+          "source_text": "Archive/Matplotlib.txt",
+          "offset": 18549,
+          "score": 12
+        },
+        {
+          "completed_sentence": "IPython 0.9.0 -- An enhanced Interactive Python.",
+          "source_text": "Archive/Matplotlib.txt",
+          "offset": 11988,
+          "score": 12
+        }
+      ]
+    },
+    {
+      "id": "internet_protocol",
+      "query": "internet protocol",
+      "results": [
+        {
+          "completed_sentence": "              Considerations for Internet Protocols\", RFC 6973,",
+          "source_text": "Archive/rfc7521.txt",
+          "offset": 1025,
+          "score": 34
+        },
+        {
+          "completed_sentence": "              Internet Protocol\", RFC 4301, December 2005,",
+          "source_text": "Archive/rfc7510.txt",
+          "offset": 856,
+          "score": 34
+        },
+        {
+          "completed_sentence": "   Internet Protocol (IPv6), this document only focuses on version 6 and",
+          "source_text": "Archive/rfc7511.txt",
+          "offset": 107,
+          "score": 34
+        },
+        {
+          "completed_sentence": "   Translate an Internet protocol name (for example, \"'icmp'\") to a",
+          "source_text": "Archive/python-3.8.4-docs-text/library/socket.txt",
+          "offset": 822,
+          "score": 34
+        },
+        {
+          "completed_sentence": "   [RFC2460]  Deering, S. and R. Hinden, \"Internet Protocol, Version 6",
+          "source_text": "Archive/rfc7510.txt",
+          "offset": 846,
+          "score": 34
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "query": "security considerations",
+      "results": [
+        {
+          "completed_sentence": "      * Security Considerations",
+          "source_text": "Archive/python-3.8.4-docs-text/contents.txt",
+          "offset": 5215,
+          "score": 46
+        },
+        {
+          "completed_sentence": "      * Security considerations",
+          "source_text": "Archive/python-3.8.4-docs-text/contents.txt",
+          "offset": 5590,
+          "score": 46
+        },
+        {
+          "completed_sentence": "     See also: SSL/TLS security considerations",
+          "source_text": "Archive/python-3.8.4-docs-text/library/asyncio-eventloop.txt",
+          "offset": 392,
+          "score": 46
+        },
+        {
+          "completed_sentence": "   \"ssl.SSLContext\" object.  Please read Security considerations for",
+          "source_text": "Archive/python-3.8.4-docs-text/library/nntplib.txt",
+          "offset": 237,
+          "score": 46
+        },
+        {
+          "completed_sentence": "   Please read Security considerations for best practices.",
+          "source_text": "Archive/python-3.8.4-docs-text/library/ftplib.txt",
+          "offset": 74,
+          "score": 46
+        }
+      ]
+    },
+    {
+      "id": "base64",
+      "query": "base64 encoded bytes",
+      "results": [
+        {
+          "completed_sentence": "# secret_key must be 32 url-safe base64-encoded bytes",
+          "source_text": "Archive/docs-aiohttp-org-en-v3.0.1.txt",
+          "offset": 3244,
+          "score": 40
+        }
+      ]
+    },
+    {
+      "id": "profiling",
+      "query": "deterministic profiling",
+      "results": [
+        {
+          "completed_sentence": "      * What Is Deterministic Profiling?",
+          "source_text": "Archive/python-3.8.4-docs-text/contents.txt",
+          "offset": 6876,
+          "score": 46
+        },
+        {
+          "completed_sentence": "  * What Is Deterministic Profiling?",
+          "source_text": "Archive/python-3.8.4-docs-text/library/debug.txt",
+          "offset": 42,
+          "score": 46
+        },
+        {
+          "completed_sentence": "\"cProfile\" and \"profile\" provide *deterministic profiling* of Python",
+          "source_text": "Archive/python-3.8.4-docs-text/library/profile.txt",
+          "offset": 11,
+          "score": 46
+        },
+        {
+          "completed_sentence": "*Deterministic profiling* is meant to reflect the fact that all",
+          "source_text": "Archive/python-3.8.4-docs-text/library/profile.txt",
+          "offset": 515,
+          "score": 46
+        },
+        {
+          "completed_sentence": "What Is Deterministic Profiling?",
+          "source_text": "Archive/python-3.8.4-docs-text/library/profile.txt",
+          "offset": 512,
+          "score": 46
+        }
+      ]
+    },
+    {
+      "id": "long_exact",
+      "query": "this document provides",
+      "results": [
+        {
+          "completed_sentence": "   The test cases specified in this document provide SIP performance",
+          "source_text": "Archive/rfc7502.txt",
+          "offset": 406,
+          "score": 44
+        },
+        {
+          "completed_sentence": "   The test cases specified in this document provide SIP performance",
+          "source_text": "Archive/rfc7502.txt",
+          "offset": 422,
+          "score": 44
+        },
+        {
+          "completed_sentence": "   This document provides a methodology for benchmarking the Session",
+          "source_text": "Archive/rfc7502.txt",
+          "offset": 20,
+          "score": 44
+        },
+        {
+          "completed_sentence": "   This document provides a terminology for benchmarking the Session",
+          "source_text": "Archive/rfc7501.txt",
+          "offset": 20,
+          "score": 44
+        },
+        {
+          "completed_sentence": "   and to achieve comparable results.  This document provides a common",
+          "source_text": "Archive/rfc7501.txt",
+          "offset": 209,
+          "score": 44
+        }
+      ]
+    },
+    {
+      "id": "long_one_edit",
+      "query": "this document provydes a terminology",
+      "results": [
+        {
+          "completed_sentence": "   This document provides a terminology for benchmarking the Session",
+          "source_text": "Archive/rfc7501.txt",
+          "offset": 20,
+          "score": 72
+        }
+      ]
+    },
+    {
+      "id": "no_match",
+      "query": "qzxwv nonexistent phrase",
+      "results": []
+    }
+  ]
+}
