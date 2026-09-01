@@ -2,18 +2,25 @@ import pytest
 
 from src.google_features.translation import TranslationResult
 from src.models import AutoCompleteData
-from src.search_service import SearchService, requires_translation
+from src.google_features.keyboard_layout import convert_hebrew_keyboard_layout
+from src.search_service import (
+    SearchService,
+    has_exact_whole_query_match,
+    keyboard_layout_candidate,
+    requires_translation,
+)
 
 
 class FakeTranslator:
-    def __init__(self):
+    def __init__(self, translated_text="how to install python"):
         self.received = []
+        self.translated_text = translated_text
 
     def translate_to_english(self, text: str) -> TranslationResult:
         self.received.append(text)
         return TranslationResult(
             original_text=text,
-            translated_text="how to install python",
+            translated_text=self.translated_text,
             detected_language="he",
         )
 
@@ -133,6 +140,108 @@ def test_empty_query_does_not_call_external_or_search_services():
     assert translator.received == []
     assert searched == []
     assert response.completions == []
+
+
+@pytest.mark.parametrize(
+    ("hebrew", "english"),
+    [
+        ("פטאיםמ", "python"),
+        ("יקךךם", "hello"),
+        ("עןא", "git"),
+        ("בםגק", "code"),
+        ("'ןמגם'", "window"),
+        ("/וקרט", "query"),
+        ("שלום", "akuo"),
+    ],
+)
+def test_converts_hebrew_layout_to_english_keys(hebrew, english):
+    assert convert_hebrew_keyboard_layout(hebrew) == english
+
+
+def test_keyboard_candidate_requires_english_words_after_conversion():
+    assert keyboard_layout_candidate("פטאיםמ") == "python"
+    assert keyboard_layout_candidate("'ןמגם'") == "window"
+    assert keyboard_layout_candidate("/וקרט") == "query"
+    assert keyboard_layout_candidate("python") is None
+    assert keyboard_layout_candidate("שלום!") is None
+
+
+def test_english_punctuation_is_not_converted_without_hebrew():
+    assert convert_hebrew_keyboard_layout("what's / this") == "what's / this"
+
+
+def test_whole_query_match_rejects_text_inside_another_word():
+    assert has_exact_whole_query_match(
+        "akuo",
+        [_completion("A pakuo example")],
+    ) is False
+    assert has_exact_whole_query_match(
+        "python",
+        [_completion("Install Python today")],
+    ) is True
+
+
+def test_keyboard_correction_is_used_for_an_exact_word_match():
+    translator = FakeTranslator(translated_text="unrelated translation")
+
+    def completion_search(query: str):
+        if query == "python":
+            return [_completion("Install Python today")]
+        return []
+
+    response = SearchService(
+        translator,
+        completion_search=completion_search,
+    ).search("פטאיםמ", multilingual=True)
+
+    assert translator.received == ["פטאיםמ"]
+    assert response.searched_query == "python"
+    assert response.keyboard_corrected is True
+    assert response.translated is False
+    assert response.alternatives == ()
+
+
+def test_inside_word_match_falls_back_to_google_translation():
+    translator = FakeTranslator(translated_text="hello")
+
+    def completion_search(query: str):
+        if query == "akuo":
+            return [_completion("A pakuo example")]
+        if query == "hello":
+            return [_completion("Hello world")]
+        return []
+
+    response = SearchService(
+        translator,
+        completion_search=completion_search,
+    ).search("שלום", multilingual=True)
+
+    assert response.searched_query == "hello"
+    assert response.translated is True
+    assert response.keyboard_corrected is False
+
+
+def test_both_valid_interpretations_are_returned_for_the_cli_to_choose():
+    translator = FakeTranslator(translated_text="serpent")
+
+    def completion_search(query: str):
+        matches = {
+            "python": [_completion("Python tutorial")],
+            "serpent": [_completion("Serpent documentation")],
+        }
+        return matches.get(query, [])
+
+    response = SearchService(
+        translator,
+        completion_search=completion_search,
+    ).search("פטאיםמ", multilingual=True)
+
+    assert [option.searched_query for option in response.alternatives] == [
+        "python",
+        "serpent",
+    ]
+    assert response.alternatives[0].keyboard_corrected is True
+    assert response.alternatives[1].translated is True
 
 
 @pytest.mark.parametrize(

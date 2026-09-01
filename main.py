@@ -7,7 +7,7 @@ from src.google_features import (
     TranslationServiceError,
 )
 from src.offline.initializer import initialize_system
-from src.search_service import SearchService
+from src.search_service import SearchAlternative, SearchResponse, SearchService
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -33,6 +33,22 @@ def choose_multilingual_mode() -> bool:
     print("  1. Regular English search")
     print("  2. Multilingual search (Google Translation)")
     return input("Mode [1]: ").strip() == "2"
+
+
+def choose_interpretation(response: SearchResponse) -> SearchAlternative | None:
+    """Ask only when keyboard correction and translation are both plausible."""
+    if not response.alternatives:
+        return None
+
+    print("\nDid you mean:")
+    for index, option in enumerate(response.alternatives, start=1):
+        print(f"  {index}. {option.searched_query} ({option.description})")
+
+    while True:
+        choice = input("Choose an option: ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(response.alternatives):
+            return response.alternatives[int(choice) - 1]
+        print("Please choose one of the listed options.")
 
 
 def run_program():
@@ -87,16 +103,39 @@ def run_program():
             print("Retry, append '#' to reset, or restart in regular mode.\n")
             continue
 
-        if response.translated:
-            language = response.detected_language or "unknown"
+        try:
+            chosen = choose_interpretation(response)
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting. Goodbye!")
+            break
+        if chosen is None:
+            searched_query = response.searched_query
+            detected_language = response.detected_language
+            translated = response.translated
+            keyboard_corrected = response.keyboard_corrected
+            completions = response.completions
+        else:
+            searched_query = chosen.searched_query
+            detected_language = chosen.detected_language
+            translated = chosen.translated
+            keyboard_corrected = chosen.keyboard_corrected
+            completions = chosen.completions
+
+        if keyboard_corrected:
+            print(
+                f"\nKeyboard layout corrected: "
+                f"'{current_query}' -> '{searched_query}'"
+            )
+        elif translated:
+            language = detected_language or "unknown"
             print(f"\nDetected language: {language}")
-            print(f"Searching in English for: '{response.searched_query}'")
+            print(f"Searching in English for: '{searched_query}'")
 
         print(f"\nSuggestions for '{current_query}':")
-        if not response.completions:
+        if not completions:
             print("  (No matching suggestions found)")
         else:
-            for i, suggestion in enumerate(response.completions):
+            for i, suggestion in enumerate(completions):
                 # 1-based line offset for user-friendly display
                 line_no = int(suggestion.offset) + 1
                 print(f"  {i+1}. {suggestion.completed_sentence} ({suggestion.source_text}:{line_no}, score={suggestion.score})")
