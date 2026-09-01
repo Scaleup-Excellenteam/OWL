@@ -66,6 +66,38 @@ unavailable, the current query is retained so the user can retry or reset it.
 Only queries containing non-English letters while mode `2` is active are sent
 to Google. English queries, archive sentences, and Trie data remain local.
 
+## Zero-downtime snapshots (adding a data source without a restart)
+
+By default the CLI loads a single `trie_cache.pkl` once at startup (see
+`Architecture` below), which means adding data means rebuilding that file and
+restarting the process. Setting `OWL_SNAPSHOTS_DIR` switches to a
+filesystem-based hand-off between the offline build and the online service
+instead, so a new data source can be indexed and adopted live:
+
+```bash
+export OWL_SNAPSHOTS_DIR=snapshots
+python main.py          # loads (or builds) the current snapshot, then keeps
+                         # a background thread polling for newer ones
+```
+
+While that process keeps running, publish a new snapshot from anywhere (add
+files under `Archive/` first to bring in a new data source):
+
+```bash
+python build_snapshot.py Archive snapshots
+```
+
+`build_snapshot.py` builds the new snapshot into its own versioned directory
+under `snapshots/` -- it never touches the snapshot the running service is
+currently reading -- and only after that build is written and re-read
+successfully does it atomically flip `snapshots/current` (write-then-rename)
+to point at it. The running `main.py` process notices on its next poll,
+loads the new snapshot, and swaps its active completion state in place.
+In-flight and subsequent queries keep being answered throughout -- by the old
+snapshot until the swap, by the new one after -- with no restart and no
+downtime window. See `src/offline/snapshot_store.py` and
+`src/online/snapshot_watcher.py`.
+
 ## Query sessions
 
 Input is cumulative: each new input is appended to the current query. In

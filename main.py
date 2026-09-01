@@ -7,6 +7,7 @@ from src.google_features import (
     TranslationServiceError,
 )
 from src.offline.initializer import initialize_system
+from src.online.snapshot_watcher import start_snapshot_service
 from src.search_service import SearchAlternative, SearchResponse, SearchService
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -25,6 +26,24 @@ def load_env():
                     if "=" in line:
                         k, v = line.split("=", 1)
                         os.environ[k.strip()] = v.strip().strip("'\"")
+
+
+def resolve_snapshots_root() -> Path | None:
+    """Read the opt-in zero-downtime snapshot directory from the environment.
+
+    Setting ``OWL_SNAPSHOTS_DIR`` switches the CLI from the legacy single
+    ``trie_cache.pkl`` (loaded once at startup) to the versioned snapshot
+    store: the initial snapshot is loaded the same way, but a background
+    watcher then keeps polling for newly published snapshots for as long as
+    the process runs, so a new data source can be indexed and published
+    remotely -- via ``build_snapshot.py`` -- without restarting this CLI.
+
+    Returns:
+        The configured snapshots directory, or ``None`` to keep using the
+        legacy fixed-cache-file startup path.
+    """
+    raw_path = os.environ.get("OWL_SNAPSHOTS_DIR")
+    return Path(raw_path) if raw_path else None
 
 
 def choose_multilingual_mode() -> bool:
@@ -58,8 +77,23 @@ def run_program():
     print("🚀 AUTO-COMPLETE SEARCH ENGINE")
     print("============================================================")
     print("Loading the files and preparing the system...")
-    initialize_system(archive_path)
 
+    snapshots_root = resolve_snapshots_root()
+    snapshot_watcher = None
+    if snapshots_root is not None:
+        print(f"Zero-downtime mode: watching snapshots under '{snapshots_root}'.")
+        snapshot_watcher = start_snapshot_service(archive_path, snapshots_root)
+    else:
+        initialize_system(archive_path)
+
+    try:
+        _run_search_loop()
+    finally:
+        if snapshot_watcher is not None:
+            snapshot_watcher.stop()
+
+
+def _run_search_loop():
     multilingual = choose_multilingual_mode()
     translator = None
     if multilingual:
