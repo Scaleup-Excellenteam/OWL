@@ -29,8 +29,12 @@ def _dfs(
     current_correction: Correction | None,
     results: list[SearchMatch],
     trie_depth: int = 0,
+    max_results: int | None = None,
 ) -> None:
     """Traverse trie paths that are at most one correction from the prefix."""
+    if max_results is not None and len(results) >= max_results:
+        return
+
     if input_idx >= len(prefix):
         refs = _gather_refs(node, 25)
         if refs:
@@ -59,7 +63,7 @@ def _dfs(
 
     if budget == 1:
         deletion = Correction(CorrectionType.DELETION, input_idx + 1)
-        _dfs(node, prefix, input_idx + 1, 0, deletion, results, trie_depth)
+        _dfs(node, prefix, input_idx + 1, 0, deletion, results, trie_depth, max_results)
 
     if node.children is not None:
         for child_char, child_node in node.children.items():
@@ -72,29 +76,20 @@ def _dfs(
                     current_correction,
                     results,
                     trie_depth + 1,
+                    max_results
                 )
             elif budget == 1:
                 replacement = Correction(CorrectionType.REPLACEMENT, input_idx + 1)
-                _dfs(child_node, prefix, input_idx + 1, 0, replacement, results, trie_depth + 1)
+                _dfs(child_node, prefix, input_idx + 1, 0, replacement, results, trie_depth + 1, max_results)
 
                 insertion = Correction(CorrectionType.INSERTION, input_idx + 1)
-                _dfs(child_node, prefix, input_idx, 0, insertion, results, trie_depth + 1)
+                _dfs(child_node, prefix, input_idx, 0, insertion, results, trie_depth + 1, max_results)
 
 
-def search(trie_root: TrieNode, prefix: str) -> list[SearchMatch]:
-    """Find trie paths matching a prefix with at most one correction.
-
-    Args:
-        trie_root: The root node of the suffix trie.
-        prefix: The user's typed search string.
-
-    Returns:
-        Search matches containing sentence references and the correction used
-        by each successful path.
-    """
+def search(trie_root: TrieNode, prefix: str, max_results: int | None = None) -> list[SearchMatch]:
     results: list[SearchMatch] = []
     if not prefix:
         return results
 
-    _dfs(trie_root, prefix, 0, 1, None, results)
+    _dfs(trie_root, prefix, 0, 1, None, results, 0, max_results)
     return results

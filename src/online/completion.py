@@ -48,6 +48,7 @@ def get_query_cache_info() -> QueryCacheInfo:
 def _best_scores_by_sentence(
     trie_root: TrieNode,
     normalized_prefix: str,
+    max_results: int | None = None
 ) -> dict[SentenceMetadata, tuple[SentenceMetadata, int]]:
     """Retain the highest-scoring search path for each sentence occurrence.
 
@@ -60,7 +61,7 @@ def _best_scores_by_sentence(
     """
     best_results: dict[SentenceMetadata, tuple[SentenceMetadata, int]] = {}
 
-    for match in search(trie_root, normalized_prefix):
+    for match in search(trie_root, normalized_prefix, max_results):
         score = calculate_score(len(normalized_prefix), match.correction)
         for sentence_ref in match.sentence_refs:
             key = sentence_ref
@@ -125,11 +126,15 @@ def get_fuzzy_substring_correction(query: str, text: str) -> tuple[bool, Correct
     return False, None
 
 
-def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
+def get_best_k_completions(
+    prefix: str,
+    max_results: int | None = None
+) -> list[AutoCompleteData]:
     """Return the five best sentence completions for a user prefix.
 
     Args:
         prefix: Raw text typed by the user.
+        max_results: Optional limit on the number of trie nodes to explore.
 
     Returns:
         Up to five completions ordered by descending score and then
@@ -153,7 +158,7 @@ def get_best_k_completions(prefix: str) -> list[AutoCompleteData]:
 
     # 1. Group candidates by score to avoid processing lower scores if we have enough
     from collections import defaultdict
-    best_scores = _best_scores_by_sentence(_trie_root, normalized_prefix)
+    best_scores = _best_scores_by_sentence(_trie_root, normalized_prefix, max_results)
     score_buckets = defaultdict(list)
     for metadata, score in best_scores.values():
         score_buckets[score].append(metadata)
